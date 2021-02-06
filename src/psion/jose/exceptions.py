@@ -11,12 +11,20 @@ class JoseError(Exception):
         super().__init__(error or self.error)
 
 
+class ExpiredToken(JoseError):
+    error = "The provided Json Web Token is expired."
+
+
 class InvalidJWSHeader(JoseError):
     error: str = "The provided Json Web Signature Header is invalid."
 
 
 class InvalidJWSSerialization(JoseError):
     error = "The provided JWS Serialization is invalid."
+
+
+class InvalidJWTClaim(JoseError):
+    error = "The provided Json Web Key Token contains an invalid claim."
 
 
 class InvalidKey(JoseError):
@@ -29,6 +37,10 @@ class InvalidKeySet(JoseError):
 
 class InvalidSignature(JoseError):
     error: str = "The provided signature does not match the provided data."
+
+
+class NotYetValidToken(JoseError):
+    error = "The provided Json Web Token is not yet valid."
 
 
 class UnsupportedAlgorithm(JoseError):

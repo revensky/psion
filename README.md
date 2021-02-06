@@ -16,7 +16,7 @@ It implements the following RFCs.
 2. [ ] RFC 7516 - Json Web Encryption (JWE)
 3. [x] RFC 7517 - Json Web Key and Keyset (JWK)
 4. [x] RFC 7518 - Json Web Algorithms (JWA)
-5. [ ] RFC 7519 - Json Web Token (JWT)
+5. [x] RFC 7519 - Json Web Token (JWT)
 
 For more details on each feature, please visit the respective documentation.
 
