@@ -41,7 +41,7 @@ class JsonWebKey:
         if (kty := data.get("kty")) not in self.__algorithms__.keys():
             raise UnsupportedAlgorithm
 
-        self._data = FullDict(data)
+        self.data = FullDict(data)
         self._algorithm: JWKAlgorithm = self.__algorithms__[kty](**data)
 
     @classmethod
@@ -145,7 +145,7 @@ class JsonWebKey:
 
         data = {
             key: value
-            for key, value in self._data.items()
+            for key, value in self.data.items()
             if key not in self._algorithm.__allowed_attributes__
         }
         data.update(self._algorithm.dump(public))
@@ -231,7 +231,7 @@ class JsonWebKeySet:
             raise InvalidKeySet
 
         # Verifies if there are any repeated IDs.
-        ids = [key._data.get("kid") for key in keys]
+        ids = [key.data.get("kid") for key in keys]
 
         if None in ids:
             raise InvalidKeySet("One or more keys do not have an ID.")
@@ -285,4 +285,4 @@ class JsonWebKeySet:
         """
 
         # pylint: disable=W0212
-        return next((key for key in self.keys if key._data["kid"] == kid), None)
+        return next((key for key in self.keys if key.data["kid"] == kid), None)

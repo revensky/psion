@@ -60,7 +60,7 @@ def _get_alg(alg: AlgType) -> hashes.HashAlgorithm:
     return alg.value
 
 
-def _parse_raw(path_or_secret: Union[os.PathLike, bytes]) -> bytes:
+def _parse_raw(path_or_secret: os.PathLike | bytes) -> bytes:
     try:
         with open(path_or_secret, "rb") as f:
             return f.read()
@@ -101,7 +101,7 @@ class JWKAlgorithm(abc.ABC):
     @abc.abstractmethod
     def parse(
         cls,
-        path_or_secret: Union[os.PathLike, bytes],
+        path_or_secret: os.PathLike | bytes,
         password: bytes = None,
         format: str = "pem",
     ) -> JWKAlgorithm:
@@ -112,7 +112,7 @@ class JWKAlgorithm(abc.ABC):
         A raw asymmetric key would be a PEM encoded key data.
 
         :param path_or_secret: The path of the raw key or its bytes representation.
-        :type path_or_secret: Union[os.PathLike, bytes]
+        :type path_or_secret: os.PathLike | bytes
 
         :param password: Password used to decrypt the raw key, defaults to None.
         :type password: bytes, optional
@@ -279,7 +279,7 @@ class ECKey(JWKAlgorithm):
     @classmethod
     def parse(
         cls,
-        path_or_secret: Union[os.PathLike, bytes],
+        path_or_secret: os.PathLike | bytes,
         password: bytes = None,
         format: str = "pem",
     ) -> ECKey:
@@ -287,7 +287,7 @@ class ECKey(JWKAlgorithm):
         Parses a raw key into an ECKey.
 
         :param path_or_secret: The path of the raw key or its bytes representation.
-        :type path_or_secret: Union[os.PathLike, bytes]
+        :type path_or_secret: os.PathLike | bytes
 
         :param password: Password used to decrypt the raw key, defaults to None.
         :type password: bytes, optional
@@ -487,7 +487,7 @@ class OCTKey(JWKAlgorithm):
     @classmethod
     def parse(
         cls,
-        path_or_secret: Union[os.PathLike, bytes],
+        path_or_secret: os.PathLike | bytes,
         password: bytes = None,
         format: str = "pem",
     ) -> OCTKey:
@@ -495,7 +495,7 @@ class OCTKey(JWKAlgorithm):
         Parses a raw secret into an OCTKey.
 
         :param path_or_secret: The path of the raw key or its bytes representation.
-        :type path_or_secret: Union[os.PathLike, bytes]
+        :type path_or_secret: os.PathLike | bytes
 
         :param password: Password used to decrypt the raw key, defaults to None.
         :type password: bytes, optional
@@ -742,7 +742,7 @@ class RSAKey(JWKAlgorithm):
     @classmethod
     def parse(
         cls,
-        path_or_secret: Union[os.PathLike, bytes],
+        path_or_secret: os.PathLike | bytes,
         password: bytes = None,
         format: str = "pem",
     ) -> RSAKey:
@@ -750,7 +750,7 @@ class RSAKey(JWKAlgorithm):
         Parses a raw key into an RSAKey.
 
         :param path_or_secret: The path of the raw key or its bytes representation.
-        :type path_or_secret: Union[os.PathLike, bytes]
+        :type path_or_secret: os.PathLike | bytes
 
         :param password: Password used to decrypt the raw key, defaults to None.
         :type password: bytes, optional

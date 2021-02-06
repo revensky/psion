@@ -11,6 +11,14 @@ class JoseError(Exception):
         super().__init__(error or self.error)
 
 
+class InvalidJWSHeader(JoseError):
+    error: str = "The provided Json Web Signature Header is invalid."
+
+
+class InvalidJWSSerialization(JoseError):
+    error = "The provided JWS Serialization is invalid."
+
+
 class InvalidKey(JoseError):
     error: str = "The provided key is invalid or contains invalid parameters."
 
