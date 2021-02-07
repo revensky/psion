@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import base64
+import binascii
 import copy
+import hashlib
 import json
 import secrets
 import string
@@ -7,6 +11,7 @@ import struct
 from functools import reduce
 from operator import concat
 from typing import Any, Union
+from urllib.parse import parse_qsl, urlencode as urlencode_
 
 
 class FullDict(dict):
@@ -200,3 +205,117 @@ def secret_token(size: int = 32) -> str:
 
     alphabet = f"{string.ascii_letters}{string.digits}-_"
     return reduce(concat, (secrets.choice(alphabet) for _ in range(size)))
+
+
+def urlencode(url: str, **params) -> str:
+    """
+    Encodes keyword arguments into a x-www-form-urlencoded
+    string and concatenates it into the provided url.
+
+    :param url: Base URL.
+    :type url: str
+
+    :return: Encoded URL containing the parameters of the dictionary as a query string.
+    :rtype: str
+    """
+
+    return f"{url}?{urlencode_(FullDict(params))}"
+
+
+def urldecode(query_string: str) -> dict:
+    """
+    Decodes a x-www-form-urlencoded string into a dictionary.
+
+    :param query_string: Query string to be decoded.
+    :type query_string: str
+
+    :return: Dictionary representation of the query string.
+    :rtype: dict
+    """
+
+    return dict(parse_qsl(query_string))
+
+
+def get_basic_authorization(headers: dict) -> tuple[str, str]:
+    """
+    Extracts the authentication credentials from a Basic authentication scheme.
+
+    :param headers: Dictionary of the headers.
+    :type headers: dict
+
+    :return: Authentication credentials.
+    :rtype: tuple[str, str]
+    """
+
+    auth: str = headers.get("authorization") or headers.get("Authorization")
+
+    if not auth or not isinstance(auth, str) or " " not in auth:
+        return None, None
+
+    method, token = auth.split(None, 1)
+
+    if method.lower() != "basic":
+        return None, None
+
+    try:
+        credentials = to_string(base64.b64decode(token))
+    except (binascii.Error, TypeError):
+        return None, None
+
+    if ":" not in credentials:
+        return None, None
+
+    try:
+        client_id, client_secret = credentials.split(":", 1)
+    except ValueError:
+        return None, None
+
+    return client_id, client_secret
+
+
+def get_bearer_authorization(headers: dict) -> str:
+    """
+    Extracts a Bearer token from a Bearer authorization scheme.
+
+    :param headers: Dictionary of the headers.
+    :type headers: dict
+
+    :return: Bearer token.
+    :rtype: str
+    """
+
+    auth: str = headers.get("authorization") or headers.get("Authorization")
+
+    if not auth or not isinstance(auth, str) or " " not in auth:
+        return None
+
+    method, token = auth.split(None, 1)
+
+    if method.lower() != "bearer":
+        return None
+
+    return token
+
+
+def create_half_hash(access_token: str, alg: str) -> str:
+    """
+    Creates a Base64UrlEncoded strinf of the left-most
+    half of the hash of the Access Token.
+
+    :param access_token: Access Token issued to the Client.
+    :type access_token: str
+
+    :param alg: Algorithm used to sign the Access Token.
+    :type alg: str
+
+    :return: Base64UrlEncoded half hash of the Access Token.
+    :rtype: str
+    """
+
+    method = getattr(hashlib, f"sha{alg[2:]}")
+
+    hash_bytes = method(to_bytes(access_token)).digest()
+    half_length = int(len(hash_bytes) / 2)
+    half_hash = base64url_encode(hash_bytes[:half_length])
+
+    return to_string(half_hash)

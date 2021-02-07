@@ -20,6 +20,13 @@ It implements the following RFCs.
 
 For more details on each feature, please visit the respective documentation.
 
+## OAuth 2.1
+
+It implements the following RFCs and Specs.
+
+1. [x] Draft - The OAuth 2.1 Authorization Framework
+2. [x] RFC 7009 - OAuth 2.0 Token Revocation
+
 # License
 
 This project is licensed under the MIT License.

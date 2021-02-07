@@ -1,0 +1,41 @@
+{% extends "base.j2" %}
+
+{% block stylesheets %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', path='css/forms.css') }}">
+{% endblock stylesheets %}
+
+{% block main_content %}
+<div class="row align-items-center background">
+    <div class="col-1 col-md-3 col-lg-4 col-xl-5"></div>
+    <div class="col-10 col-md-6 col-lg-4 col-xl-2 jumbotron form-wrapper">
+        <form action="{{ login_and_next }}" method="post" class="mb-4">
+            <h1 class="mb-5 text-center">Login</h1>
+
+            {% if validation_error %}
+            <div class="alert alert-danger mb-4">{{ validation_error }}</div>
+            {% endif %}
+
+            {{ form.csrf_token }}
+
+            <div class="form-group mb-4">
+                {{ form.email(class_="form-control", placeholder="Email*") }}
+                <small id="email-help" class="form-text text-muted">Example: johndoe@gmail.com</small>
+                {% for error in form.email.errors %}
+                <small id="email-error" class="form-text text-danger">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <div class="form-group mb-4">
+                {{ form.password(class_="form-control", placeholder="Password*") }}
+                <small id="password-help" class="form-text text-muted">Between 8 and 64 characteres.</small>
+                {% for error in form.password.errors %}
+                <small id="password-error" class="form-text text-danger">{{ error }}</small>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn login-btn form-btn text-light">Login</button>
+        </form>
+    </div>
+    <div class="col-1 col-md-3 col-lg-4 col-xl-5"></div>
+</div>
+{% endblock main_content %}
