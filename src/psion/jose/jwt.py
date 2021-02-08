@@ -29,7 +29,7 @@ class JsonWebTokenClaims(dict):
         if not claims or not isinstance(claims, dict):
             raise InvalidJWTClaim("The claims object MUST be a valid dict.")
 
-        self.options = options
+        self.options = options or {}
 
         self._validate_default_claims(claims)
 
