@@ -57,8 +57,6 @@ class IDToken(JsonWebTokenClaims):
             raise InvalidJWTClaim('Invalid claim "auth_time".')
 
     def _validate_nonce(self, claims: dict) -> None:
-        nonce = self.options.get("nonce")
-
-        if nonce:
+        if nonce := self.options.get("nonce"):
             if nonce != claims.get("nonce"):
                 raise InvalidJWTClaim('Invalid claim "nonce".')
