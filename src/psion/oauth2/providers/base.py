@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Type
+from typing import Any
 
 from psion.jose import JsonWebKeySet
 from psion.oauth2.adapter import BaseAdapter
@@ -21,8 +21,8 @@ class BaseProvider(abc.ABC):
         self,
         issuer: str,
         *,
-        adapter: Type[BaseAdapter],
-        grants: list[Type[BaseGrant]],
+        adapter: type[BaseAdapter],
+        grants: list[type[BaseGrant]],
         scopes: list[Scope],
         keyset: JsonWebKeySet,
         error_url: str,
@@ -64,6 +64,25 @@ class BaseProvider(abc.ABC):
             config=self.config,
             authenticate=self.authenticate,
         )
+
+    def add_hook(self, grant_cls: type[BaseGrant], hook: Any) -> None:
+        """
+        Adds a hook to the specified Grant, extending its functionalities.
+
+        :param grant: Grant to be extended.
+        :type grant: BaseGrant
+
+        :param hook: Class containing the desired hooks' implementations.
+        :type hook: Any
+        """
+
+        for grant in self.grants:
+            if not isinstance(grant, grant_cls):
+                continue
+
+            for checkpoint in grant.__hooks__:
+                if hasattr(hook, checkpoint):
+                    grant.__hooks__[checkpoint].add(hook(self.adapter, self.config))
 
     @abc.abstractmethod
     async def create_request(self, request: Any) -> Request:

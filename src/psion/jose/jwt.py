@@ -31,8 +31,10 @@ class JsonWebTokenClaims(dict):
 
         self._validate_default_claims(claims)
 
+        self.options = options
+
         if isinstance(options, dict):
-            self._validate_claims(options)
+            self._validate_claims()
 
         super().__init__(FullDict(claims))
 
@@ -51,7 +53,6 @@ class JsonWebTokenClaims(dict):
 
         # Validate exp
         if exp := claims.get("exp"):
-            print(exp)
             if exp is not None and type(exp) is not int:
                 raise InvalidJWTClaim('Invalid claim "exp".')
 
@@ -86,17 +87,14 @@ class JsonWebTokenClaims(dict):
         if claims.get("sub") is not None and not isinstance(claims.get("sub"), str):
             raise InvalidJWTClaim('Invalid claim "sub".')
 
-    def _validate_claims(self, options: dict[str, dict]) -> None:
+    def _validate_claims(self) -> None:
         """
         Validates the provided claims using the declared options.
-
-        :param options: Options used to validate the JWT claims.
-        :type options: dict
 
         :raises InvalidJWTClaim: The requested claim does not meet the requirements.
         """
 
-        for claim, option in options.items():
+        for claim, option in self.options.items():
             if not isinstance(option, dict):
                 continue
 

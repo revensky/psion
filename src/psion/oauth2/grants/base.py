@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import abc
-
-from typing import Optional
+from collections.abc import AsyncGenerator
+from typing import Any, Optional
 
 from psion.oauth2.adapter import BaseAdapter
 from psion.oauth2.config import Config
@@ -36,6 +36,8 @@ class BaseGrant:
     :cvar ``__authentication_methods__``: Allowed Client Authentication methods.
     :cvar ``__grant_type__``: Name of the Token Grant.
     :cvar ``__response_type__``: Name of the Authorization Grant.
+    :cvar ``__hooks__``: Defines the hooks to be executed in the grant flow
+        to provide custom functionalities to it.
 
     :param adapter: Instance of the adapter used by the application.
     :type adapter: BaseAdapter
@@ -47,6 +49,12 @@ class BaseGrant:
     __authentication_methods__: list[str] = None
     __grant_type__: str = None
     __response_type__: str = None
+    __hooks__: dict[str, set[Any]] = {
+        "authorization_request": set(),
+        "authorization_response": set(),
+        "token_request": set(),
+        "token_response": set(),
+    }
 
     def __init__(self, adapter: BaseAdapter, config: Config):
         self.adapter = adapter
@@ -97,6 +105,25 @@ class BaseGrant:
                 "scope": " ".join(scopes) if scopes else None,
             }
         )
+
+    async def _execute_hook(
+        self, name: str, *args: Any, **kwargs: Any
+    ) -> AsyncGenerator[dict]:
+        """
+        Executes all the registered hooks that contain the requested method name.
+
+        :param name: Name of the checkpoint of the Grant flow.
+        :type name: str
+
+        :return: Async generator containing the results from the executed hooks.
+        :rtype: AsyncGenerator[dict]
+        """
+
+        for checkpoint, hooks in self.__hooks__.items():
+            if checkpoint == name:
+                for hook in hooks:
+                    method = getattr(hook, name)
+                    yield await method(*args, **kwargs)
 
     def _validate_requested_scopes(
         self, scopes: list[str], client: ClientMixin, state: Optional[str] = None

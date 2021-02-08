@@ -6,6 +6,7 @@ from psion.oauth2.grants import (
 )
 from psion.oauth2.models import Scope
 from psion.oauth2.providers import StarletteProvider
+from psion.oidc import AuthorizationCodeFlow
 from psion.webtools import to_bytes
 
 from example.adapter import Adapter
@@ -28,3 +29,5 @@ provider = StarletteProvider(
     ),
     error_url="/connect/error",
 )
+
+provider.add_hook(AuthorizationCodeGrant, AuthorizationCodeFlow)

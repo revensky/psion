@@ -94,19 +94,23 @@ class AuthorizationCodeGrant(BaseGrant):
         :rtype: str
         """
 
-        data = self._validate_authorization_request(data)
-
+        data = await self._validate_authorization_request(data)
         self._validate_requested_scopes(data["scopes"], client, data.get("state"))
 
         code = secret_token(64)
-
         await self.adapter.save_authorization_code(code, data, client, user)
 
-        return self._create_authorization_response(
-            data["redirect_uri"], {"code": code, "state": data.get("state")}
-        )
+        response = {"code": code, "state": data.get("state")}
 
-    def _validate_authorization_request(self, data: dict) -> dict:
+        async for hook in self._execute_hook(
+            "authorization_response", code, data, client, user
+        ):
+            if hook:
+                response.update(hook)
+
+        return self._create_authorization_response(data["redirect_uri"], response)
+
+    async def _validate_authorization_request(self, data: dict) -> dict:
         """
         Validates the incoming data from the `Client` to ensure
         that **ALL** the required parameters were provided.
@@ -152,7 +156,6 @@ class AuthorizationCodeGrant(BaseGrant):
         code_challenge: str = data.get("code_challenge")
         code_challenge_method: str = data.get("code_challenge_method")
         scope: str = data.get("scope")
-        nonce: Optional[str] = data.get("nonce")
 
         if state:
             if not state or not isinstance(state, str):
@@ -176,18 +179,19 @@ class AuthorizationCodeGrant(BaseGrant):
         if not scope or not isinstance(scope, str):
             raise InvalidRequest(description='Invalid parameter "scope".', state=state)
 
-        if nonce:
-            if not nonce or not isinstance(nonce, str):
-                raise InvalidRequest(description='Invalid parameter "nonce".')
-
-        return {
+        response = {
             "code_challenge": code_challenge,
             "code_challenge_method": code_challenge_method,
             "redirect_uri": data["redirect_uri"],
             "scopes": scope.split(),
-            "nonce": nonce,
             "state": state,
         }
+
+        async for hook in self._execute_hook("authorization_request", data):
+            if hook:
+                response.update(hook)
+
+        return response
 
     async def token(self, data: dict, client: ClientMixin) -> dict:
         """
@@ -273,7 +277,7 @@ class AuthorizationCodeGrant(BaseGrant):
         """
 
         try:
-            data = self._validate_token_request(data)
+            data = await self._validate_token_request(data)
             code = await self.adapter.get_authorization_code(data["code"])
 
             if not code:
@@ -303,9 +307,11 @@ class AuthorizationCodeGrant(BaseGrant):
                 code.get_scopes(),
             )
 
-            """if "openid" in code.get_scopes():
-                id_token = await self._generate_id_token(token, client, user)
-                token.update({"id_token": id_token})"""
+            async for hook in self._execute_hook(
+                "token_response", token, data, client, user
+            ):
+                if hook:
+                    token.update(hook)
 
             return token
         finally:
@@ -313,7 +319,7 @@ class AuthorizationCodeGrant(BaseGrant):
             # whether it succeeds or fails.
             await self.adapter.delete_authorization_code(data["code"])
 
-    def _validate_token_request(self, data: dict) -> dict:
+    async def _validate_token_request(self, data: dict) -> dict:
         """
         Validates the incoming data from the `Client` to ensure
         that **ALL** the required parameters were provided.
@@ -408,11 +414,17 @@ class AuthorizationCodeGrant(BaseGrant):
         ):
             raise InvalidRequest(description='Invalid parameter "code_verifier".')
 
-        return {
+        response = {
             "code": data["code"],
             "redirect_uri": data["redirect_uri"],
             "code_verifier": data["code_verifier"],
         }
+
+        async for hook in self._execute_hook("token_request", data):
+            if hook:
+                response.update(hook)
+
+        return response
 
     def _validate_authorization_code(
         self, data: dict, code: AuthorizationCodeMixin, client: ClientMixin
@@ -471,48 +483,3 @@ class AuthorizationCodeGrant(BaseGrant):
         """
 
         return urlencode(url, **data)
-
-    '''async def _generate_id_token(
-        self, token: dict, client: ClientMixin, user: UserMixin
-    ) -> str:
-        """
-        Generates an ID Token containing the claims of the currently authenticated User
-        based on the scopes requested by the Client.
-
-        This method **MUST** only be used if the scope `openid` has been requested,
-        otherwise, it is ignored and treated as a normal OAuth 2.1 Authorization Request.
-
-        :param token: Token containing the Access Token and the scopes.
-        :type token: dict
-
-        :param client: Client requesting authorization.
-        :type client: ClientMixin
-
-        :param user: Currently authenticated User.
-        :type user:
-
-        :return: JWT encoded ID Token containing the claims
-            requested by the Client about the User.
-        :rtype: str
-        """
-
-        key_info = await self.adapter.get_key_info()
-        userinfo = await self.adapter.get_userinfo(user, token["scope"].split())
-        now = int(datetime.utcnow().timestamp())
-
-        claims = IDToken(
-            {
-                "iss": self.config.issuer,
-                "aud": client.get_client_id(),
-                "exp": now + self.config.id_token_lifespan,
-                "iat": now,
-                "at_hash": create_half_hash(token["access_token"], key_info["alg"]),
-                **userinfo,
-            }
-        )
-        token = JsonWebToken(
-            claims,
-            {"alg": key_info["alg"], "typ": "JWT", "kid": key_info["key"]["kid"]},
-        )
-
-        return token.encode(key_info["key"])'''
